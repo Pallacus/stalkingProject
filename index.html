@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="ca">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Descarrega vídeos TV3</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: Helvetica, Arial, sans-serif;
+            background-color: #000;
+            color: #fff;
+        }
+
+        wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: start;
+            height: 100vh;
+            padding: 2rem 5rem;
+        }
+
+        h3 {
+            padding: 1rem 0;
+        }
+
+        form {
+            width: 80vw;
+            padding: 1rem 0;
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        input[type="text"] {
+            flex: 6;
+            height: 2.25rem;
+            padding: 0.5rem;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        button {
+            min-width: 8rem;
+            flex: 1;
+            height: 2.25rem;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+
+            cursor: pointer;
+            font-size: 16px;
+            border-radius: 0.5rem;
+        }
+
+        .output {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 0.5rem 1rem;
+            width: 100vw;
+            align-items: center;
+
+            &:nth-child(odd) {
+                grid-column: 1 / 2;
+                grid-row: 1;
+                width: 25vw;
+            }
+
+            &:nth-child(even) {
+                grid-column: 2 / 4;
+                grid-row: 1;
+                width: 75vw;
+            }
+
+            & .titol {
+                font-weight: bold;
+                font-size: 1.2rem;
+            }
+
+            & p {
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <wrapper>
+        <h3>Descarrega vídeos de TV3</h3>
+        <p>Per veure'ls sense connexió, al tren, a l'autobús, al refugi de Broate... </p>
+
+        <form action="">
+            <input type="text" name="link" placeholder="Enllaç del vídeo de TV3" required>
+            <button type="submit">Som-hi!</button>
+        </form>
+        <container class="output">
+
+        </container>
+
+    </wrapper>
+
+    <script>
+        document.querySelector('form').addEventListener('submit', async function (e) {
+            e.preventDefault();
+            const link = this.link.value.trim();
+            let code = null;
+            if (link) { //  Extreure l'última cadena de caràcters numérics de l'enllaç
+                let match = link.match(/(\d{6,7})(?:\/)?$/);
+                code = match ? match[1] : null;
+            } else {
+                alert('Si us plau, introdueix un enllaç de vídeo de TV3.');
+            }
+            if (code) {
+                const output = document.querySelector('.output');   //  Consultar la API i mostrar el json resultant al container.output
+                let response = await fetch(
+                    `https://dinamics.ccma.cat/pvideo/media.jsp?media=video&version=0s&idint=${code}`);
+                let data = await response.json();
+                //  Si hi ha "data" mostrar-ne el contingut en un element <pre> dins de container.output
+                console.log(data);
+                console.log("data informacio id : \n",
+                    data.informacio.durada.text)
+                if (data) {
+                    let actiu = (data.informacio.estat.actiu) ? "" : "ja no ";
+                    let outputItems = ""; // Creem una variable per inserir els elements html del contingut
+
+                    outputItems += `<p class="titol"></p><p>L'enllaç ${actiu}és actiu</p>`;
+                    outputItems += `<p class="titol">Identificador: </p><p>${data.informacio.id}</p>`;
+                    outputItems += `<p class="titol">Títol: </p><p>${data.informacio.titol}</p>`;
+                    outputItems += `<p class="titol">Sinopsi: </p><p>${data.informacio.descripcio}</p>`;
+
+                    let hores = Math.floor(data.informacio.durada.milisegons / 3600000)
+                    let minuts = Math.floor((data.informacio.durada.milisegons - (hores * 3600000)) / 60000)
+                    let durada = {
+                        hores: (hores < 10) ? `0${hores}` : hores,
+                        minuts: (minuts < 10) ? `0${minuts}` : minuts
+                    };
+
+                    outputItems += `<p class="titol">Durada: </p><p>${durada.hores}:${durada.minuts}</p>`;
+
+                    outputItems += `<p class="titol">Data d'emissió: </p><p>${data.informacio.data_emissio.text.split(" ", 1)}</p>`;
+                    outputItems += `<p class="titol">Data de caducitat: </p><p>${data.informacio.data_caducitat.text.split(" ", 1)}</p>`;
+                    outputItems += `<p class="titol">Gènere: </p><p>${data.informacio.tematica.text}</p>`;
+                    outputItems += `<p class="titol">Recomanació: </p><p>${data.informacio.codi_etic.text}</p>`;
+
+                    outputItems += `<hr><hr>
+                        <p class="titol">data: </p><pre>${JSON.stringify(data, null, 2)}</pre>`;
+
+                    output.innerHTML = outputItems; // Inserim els elements html al container.output
+                }
+
+                //  output.textContent = JSON.stringify(data, null, 2);
+            }
+        });
+    </script>
+</body>
+
+</html>
