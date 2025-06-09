@@ -5,6 +5,12 @@
 - Consultar `https://dinamics.ccma.cat/pvideo/media.jsp?media=video&version=0s&idint=6343012`
 - Analitzar tota la informació disponible a dinamics.ccma.cat
 
+## TODO:
+- Comprovar error si no hi ha una resposta satisfactoria.
+- Controlar si no s'omple el formulari.
+- Afegir botó al costat de l'input nomDescàrrega. Al fer click generarà un botó de descàrrega per cada contingut
+- El botó de descàrrega al peu del document descarregarà cada contingut sel"leccionat
+
 ### Apunts de  midudev per fer scrapy:
 
 - 1 Nou projecte de Node: `npm init -y`

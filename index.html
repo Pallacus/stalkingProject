@@ -85,6 +85,17 @@
             & p {
                 font-size: 1rem;
             }
+
+            & .content-form {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+
+            }
+        }
+
+        & #botoDescarrega {
+            width: 12rem;
         }
     </style>
 </head>
@@ -121,18 +132,35 @@
                     `https://dinamics.ccma.cat/pvideo/media.jsp?media=video&version=0s&idint=${code}`);
                 let data = await response.json();
                 //  Si hi ha "data" mostrar-ne el contingut en un element <pre> dins de container.output
-                console.log(data);
-                console.log("data informacio id : \n",
-                    data.informacio.durada.text)
                 if (data) {
-                    let actiu = (data.informacio.estat.actiu) ? "" : "ja no ";
-                    let outputItems = ""; // Creem una variable per inserir els elements html del contingut
+                    //  Preparem les variables que utilitzarem mes endavant:
 
-                    outputItems += `<p class="titol"></p><p>L'enllaç ${actiu}és actiu</p>`;
-                    outputItems += `<p class="titol">Identificador: </p><p>${data.informacio.id}</p>`;
-                    outputItems += `<p class="titol">Títol: </p><p>${data.informacio.titol}</p>`;
-                    outputItems += `<p class="titol">Sinopsi: </p><p>${data.informacio.descripcio}</p>`;
+                    // Seleccionem el container.output
+                    let output = document.querySelector('.output');
 
+                    // Netejem el contingut del container.output
+                    output.innerHTML = "";
+
+                    // Creem una variable per inserir els elements html del contingut
+                    let outputItems = "";
+
+
+                    // Creem un array per guardar els vídeos seleccionats
+                    let videosSeleccionats = Array(data.media.url.length).fill(false);
+
+                    // Creem un array per guardar les variants seleccionades
+                    let variantsSeleccionades = Array(data.variants.length).fill(false);
+
+                    // Creem un array per guardar els subtítols seleccionats
+                    let subtitolsSeleccionats = Array(data.subtitols.length).fill(false);
+
+
+                    //  Variables per mostrar el contigut
+
+                    //  Informem si l'enllaç és actiu a trescat.cat
+                    let actiu = (data.informacio.estat.actiu) ? "L'enllaç és actiu" : "L'enllaç ja no és actiu";
+
+                    // Preparem la durada del vídeo
                     let hores = Math.floor(data.informacio.durada.milisegons / 3600000)
                     let minuts = Math.floor((data.informacio.durada.milisegons - (hores * 3600000)) / 60000)
                     let durada = {
@@ -140,20 +168,182 @@
                         minuts: (minuts < 10) ? `0${minuts}` : minuts
                     };
 
+                    let continguts = []
+
+                    //  Lógica per preparar els continguts
+                    if (data.media.url && data.media.url.length > 0) {
+                        data.media.url.forEach((url, index) => {
+                            switch (url.label) {
+                                case "720p":
+                                    url.label = "HD 1080p";
+                                    break;
+                                default:
+                                    break;
+                            }
+                            continguts.push({
+                                etiqueta: url.label,
+                                arxiu: url.file,
+                                tipus: "video",
+                                titol: `Vídeo ${(index + 1)}`,
+                                seleccionat: false
+                            });
+                        });
+                    }
+                    if (data.variants && data.variants.length > 0) {
+                        let nom = "";
+                        data.variants.forEach((variant, index) => {
+                            nom = variant.nom
+                            if (variant.media.url && variant.media.url.length > 0) {
+                                variant.media.url.forEach((url, idx) => {
+
+                                    switch (url.label) {
+                                        case "720p":
+                                            url.label = "HD 1080p";
+                                            break;
+                                        default:
+                                            break;
+                                    }
+                                    continguts.push({
+                                        etiqueta: url.label,
+                                        arxiu: url.file,
+                                        tipus: nom,
+                                        titol: `${nom} ${(continguts.length + 1)}`,
+                                        seleccionat: false
+                                    });
+                                });
+                            }
+                        });
+                    }
+                    if (data.subtitols && data.subtitols.length > 0) {
+                        data.subtitols.forEach((sub, index) => {
+                            continguts.push({
+                                etiqueta: sub.iso,
+                                arxiu: sub.url,
+                                tipus: "subtítol",
+                                titol: `Subtítols en ${(sub.text)}`,
+                                seleccionat: false
+                            });
+                        });
+                    }
+
+
+
+                    //  Inserim els elements html del contingut a la variable outputItems
+
+                    //  Informem si l'enllaç és actiu a trescat.cat
+                    outputItems += `<p class="titol"></p><p>${actiu}</p>`;
+
+                    //  L'ID del vídeo
+                    outputItems += `<p class="titol">Identificador: </p><p>${data.informacio.id}</p>`;
+
+                    //  El títol
+                    outputItems += `<p class="titol">Títol: </p><p>${data.informacio.titol}</p>`;
+
+                    //  La sinopsi
+                    outputItems += `<p class="titol">Sinopsi: </p><p>${data.informacio.descripcio}</p>`;
+
+                    //  La durada
                     outputItems += `<p class="titol">Durada: </p><p>${durada.hores}:${durada.minuts}</p>`;
 
+                    //  La data d'emissió
                     outputItems += `<p class="titol">Data d'emissió: </p><p>${data.informacio.data_emissio.text.split(" ", 1)}</p>`;
+
+                    //  La data de caducitat del contingut a trescat.cat
                     outputItems += `<p class="titol">Data de caducitat: </p><p>${data.informacio.data_caducitat.text.split(" ", 1)}</p>`;
+
+                    //  De quin gènere es el contingut
                     outputItems += `<p class="titol">Gènere: </p><p>${data.informacio.tematica.text}</p>`;
+
+                    //  La classificació d'edat
                     outputItems += `<p class="titol">Recomanació: </p><p>${data.informacio.codi_etic.text}</p>`;
 
-                    outputItems += `<hr><hr>
-                        <p class="titol">data: </p><pre>${JSON.stringify(data, null, 2)}</pre>`;
+                    //  Confeccionem un nom d'arxiu per les descàrregues.
+                    //  L'usuari el pot editar per personalitzar-lo
+                    outputItems += `<p class="titol">Arxiu: </p>
+                    <input type="text" value="${data.informacio.titol} [català][${durada.hores}:${durada.minuts} H264 HD-1920x1080 AAC]" /> `// TODO: Afegir un botó que generarà un botó de descàrega per cada contingut
 
-                    output.innerHTML = outputItems; // Inserim els elements html al container.output
-                }
+                    //  Si hem trobat continguts, els mostrem
+                    if (continguts && continguts.length > 0) {
+                        continguts.forEach((url, index) => {
 
-                //  output.textContent = JSON.stringify(data, null, 2);
+                            outputItems += `<p class="titol">${url.titol}: </p>`;
+                            outputItems += `<div class="content-form" > <input type="checkbox" id="${index}" /> <p> ${url.etiqueta} </p> </div>`;
+                        });
+                    }
+
+                    //  Inserim els elements html al container.output
+                    output.innerHTML = outputItems;
+
+
+                    //  Si es seleccionen continguts mostrem el botó de descàrrega:
+
+                    //  Afegim un element buit en pro de la maquetació
+                    output.appendChild(document.createElement('p'));
+
+                    //  Afegim el botó de descàrrega (inicialment ocult)
+                    let botoDescarrega = document.createElement('button');
+                    botoDescarrega.textContent = "Descarrega";
+                    botoDescarrega.style.display = "none";
+                    botoDescarrega.id = "botoDescarrega";
+                    output.appendChild(botoDescarrega);
+
+                    // Funció per comprovar si hi ha algun checkbox seleccionat
+                    function actualitzaBoto() {
+                        let algunSeleccionat = false;
+                        document.querySelectorAll('.content-form input[type="checkbox"]').forEach((cb, idx) => {
+                            //  Per cada checkbox, actualitzem l'estat de contingut[i].seleccionat
+                            continguts[idx].seleccionat = cb.checked;
+                            //  Si algun checkbox està seleccionat marquem algunSeleccionat
+                            if (cb.checked) algunSeleccionat = true;
+                        });
+                        //  Si algunSeleccionat es true es mostrarà el botó de descàrrega:
+                        botoDescarrega.style.display = algunSeleccionat ? "block" : "none";
+                    }
+
+                    // Afegim listeners a tots els checkboxes
+                    document.querySelectorAll('.content-form input[type="checkbox"]').forEach(cb => {
+                        cb.addEventListener('change', actualitzaBoto);
+                    });
+
+
+
+                    // TODO: Canviar l'ultim botó de descàrrega per un botó que "farà click" als botons dels continguts sel·leccionats
+                    /* 
+                                        //  Funció de descàrrega dels continguts seleccionats
+                                        botoDescarrega.addEventListener('click', async () => {
+                                            //  Recorrem els continguts i descarreguem els seleccionats |pop|unshift|
+                    
+                                            //  Si lúltim element es un subtítol, el movem al principi de l'array.
+                                            while (continguts[(continguts.length - 1)].tipus === "subtítol") {
+                                                continguts.unshift(continguts.pop());
+                                            }
+                    
+                                            for (const contingut of continguts) {
+                                                if (contingut.seleccionat) {
+                                                    try {
+                                                        const response = await fetch(contingut.arxiu);
+                                                        const blob = await response.blob();
+                                                        const url = URL.createObjectURL(blob);
+                                                        const a = document.createElement('a');
+                                                        a.href = url;
+                                                        a.download = document.querySelector('input[type="text"]').value || 'video.mp4';
+                                                        a.style.display = 'none';
+                                                        document.body.appendChild(a);
+                                                        a.click();
+                                                        document.body.removeChild(a);
+                                                        URL.revokeObjectURL(url);
+                                                    } catch (e) {
+                                                        alert('No s\'ha pogut descarregar el fitxer directament. Prova d\'obrir-lo en una pestanya nova.');
+                                                    }
+                                                }
+                                            }
+                                        });
+                                         */
+                } /* else if (data.code === 404) {
+                    output.innerHTML = "<p class='titol'>No s'ha trobat informació per aquest vídeo.</p>";
+                } */
+
+
             }
         });
     </script>
